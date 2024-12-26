@@ -1,0 +1,51 @@
+import numpy as np
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Embedding, Dropout
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+import matplotlib.pyplot as plt
+
+# Step 1: Load the dataset
+newsgroups = fetch_20newsgroups(subset='all', remove=('headers', 'footers', 'quotes'))
+X = newsgroups.data
+y = newsgroups.target
+
+# Step 2: Preprocess the text data (Tokenization and Padding)
+max_words = 2000  # Limit vocabulary size
+max_len = 100  # Maximum length of input sequences
+
+tokenizer = Tokenizer(num_words=max_words)
+tokenizer.fit_on_texts(X)
+sequences = tokenizer.texts_to_sequences(X)
+
+X_pad = pad_sequences(sequences, maxlen=max_len)
+
+# Step 3: Split into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_pad, y, test_size=0.2, random_state=42)
+
+# Step 4: Define the CNN model with additional layers and dropout for regularization
+model = Sequential()
+…
+# Step 5: Compile the model with a learning rate scheduler (optional)
+model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Step 6: Train the model with increased epochs and batch size
+history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=64)  # Increased epochs and batch size
+
+# Step 7: Evaluate the model
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f"Test Accuracy: {accuracy:.2f}")
+
+# Step 8: Generate and display the confusion matrix
+y_pred = np.argmax(model.predict(X_test), axis=-1)  # Get predicted classes
+cm = confusion_matrix(y_test, y_pred)  # Compute confusion matrix
+
+# Visualize the confusion matrix
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=newsgroups.target_names)
+disp.plot(cmap=plt.cm.Blues)
+plt.title('Confusion Matrix')
+plt.show()
+
