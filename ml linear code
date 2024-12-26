@@ -1,0 +1,57 @@
+# Importing necessary libraries
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, accuracy_score, ConfusionMatrixDisplay
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Step 1: Load the dataset
+newsgroups = fetch_20newsgroups(subset='all', remove=('headers', 'footers', 'quotes'))
+
+# Create a DataFrame (dates are not used for splitting)
+data = {
+    'text': newsgroups.data,
+    'target': newsgroups.target  # Include target labels for splitting
+}
+df = pd.DataFrame(data)
+# Step 2: Convert text to numerical data using TF-IDF with bigrams and increased max_features
+vectorizer = TfidfVectorizer(stop_words='english', max_features=5000, ngram_range=(1, 2))  # Bigrams included
+X = vectorizer.fit_transform(df['text'])
+y = df['target'].values  # Use the target column from the DataFrame
+# Step 3: Randomly split into training and testing sets (no date consideration)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Step 4: Hyperparameter tuning using Grid Search for Logistic Regression
+param_grid = {
+    'C': [0.01, 0.1, 1, 10],  # Regularization parameter
+    'solver': ['liblinear', 'saga']  # Different solvers to try
+}
+grid_search = GridSearchCV(LogisticRegression(max_iter=1000, random_state=42), param_grid, cv=5)
+grid_search.fit(X_train, y_train)
+# Best model from grid search
+best_classifier = grid_search.best_estimator_
+
+# Step 5: Make predictions on the test set using the best model
+y_pred = best_classifier.predict(X_test)
+
+# Step 6: Evaluate performance - Confusion Matrix and Accuracy
+conf_matrix = confusion_matrix(y_test, y_pred)
+accuracy = accuracy_score(y_test, y_pred)
+# Plot results
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Plot confusion matrix
+ConfusionMatrixDisplay(conf_matrix, display_labels=newsgroups.target_names).plot(ax=ax, xticks_rotation='vertical', cmap='viridis')
+ax.set_title("Confusion Matrix")
+
+plt.tight_layout()
+plt.show()
+
+# Displaying accuracy and confusion matrix
+print(f"Accuracy: {accuracy:.2f}")
+print("Confusion Matrix:")
+print(conf_matrix)
+
+
